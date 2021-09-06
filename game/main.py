@@ -8,15 +8,14 @@ from dotenv import load_dotenv
 import os
 
 # Библеотека класс переводчика
-from game import Translation
-
+from translation import Translation
 # Библеотека игры "Висельница"
-from game import Hangman
+from hangman import Hangman
 
 # Библеотека логирования
 import logging
 
-env_path = '../.env'
+env_path = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), ".env")
 load_dotenv(dotenv_path=env_path)
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -48,7 +47,7 @@ def handle_text(message):
 
 @bot.message_handler(content_types=['text', 'photo'])
 def dating_handler(message):
-    print(message)
+    print(message.text)
 
 
 @bot.callback_query_handler(func=lambda call: True)

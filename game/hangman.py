@@ -8,15 +8,17 @@ import random
 
 from telebot import types
 
+import os
+
+
 ID = 0
 HP = 1
 WORD = 2
 GUESS = 3
 LETTERS = 4
 THEME = 5
-
-TRANSLATION_PATH = 'Translations/hangman.json'
-CATEGORIES_PATH = 'categories.json'
+TRANSLATION_PATH = os.path.join(os.path.dirname(os.path.realpath(__file__)), "Translations/hangman.json")
+CATEGORIES_PATH = os.path.join(os.path.dirname(os.path.realpath(__file__)), "categories.json")
 
 with open(TRANSLATION_PATH, "r", encoding="utf8") as read:
     translations_HM = json.load(read)

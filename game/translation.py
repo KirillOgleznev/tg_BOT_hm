@@ -2,6 +2,7 @@
 Переводчик.
 """
 import json
+import os
 
 
 class Translation:
@@ -9,13 +10,7 @@ class Translation:
     Класс переводчика.
     """
     __players = {}
-    __menu_translation_path = f'./Translations/menu.json'
-    __slots_translation_path = f'./Translations/slots.json'
-    __xo_translation_path = f'./Translations/xo.json'
-    __bj_translation_path = f'./Translations/bj.json'
-    __hm_translation_path = f'./Translations/hangman.json'
-    __dating_translation_path = f'./Translations/dating.json'
-    __tora_translation_path = f'./Translations/TorA.json'
+    __hm_translation_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "Translations/hangman.json")
 
     @classmethod
     def get_hangman_exp(cls, key, user_id):
