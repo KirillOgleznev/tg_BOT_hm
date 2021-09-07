@@ -17,6 +17,8 @@ WORD = 2
 GUESS = 3
 LETTERS = 4
 THEME = 5
+HINT = 6
+
 TRANSLATION_PATH = os.path.join(os.path.dirname(os.path.realpath(__file__)), "Translations/hangman.json")
 CATEGORIES_PATH = os.path.join(os.path.dirname(os.path.realpath(__file__)), "categories.json")
 
@@ -27,11 +29,11 @@ with open(CATEGORIES_PATH, "r", encoding="utf8") as read:
     json_categories = json.load(read)
 
 # Телеграм ID Кирилла
-MY_ID = 723229931
+MY_ID = -544154569
 
 # Бкувы для кнопок
-ABC = 'A B C D E F G H I J K L M N O P Q R S T U V W X Y Z'.split()
-ABC_RU = 'А Б В Г Д Е Ж З И Й К Л М Н О П Р С Т У Ф Х Ц Ч Ш Щ Ъ Ы Ь Э Ю Я'.split() + [' ']
+ABC = 'A B C D E F G H I J K L M N O P Q R S T U V W X Y Z'.split() + [' ']*6
+ABC_RU = 'А Б В Г Д Е Ж З И Й К Л М Н О П Р С Т У Ф Х Ц Ч Ш Щ Ъ Ы Ь Э Ю Я'.split()
 # Список с активными игроками
 SWITCHER = {0: 1, 1: 0}
 CATEGORIES = ["ALL", "ANIMALS", "EAT", "HOUSE", "CLOTHES", "SCHOOL",
@@ -44,7 +46,7 @@ class Hangman:
     """
     players = []
 
-    call_list = CATEGORIES + ABC_RU + ABC + ["Hangman", "language_ru", "language_en", "🚫️", "⬇️"]
+    call_list = CATEGORIES + ABC_RU + ABC + ["Hangman", "language_ru", "language_en", "🚫️", "⬇️", "💡"]
 
     @classmethod
     def get_callback(cls, call, bot, lang):
@@ -70,6 +72,9 @@ class Hangman:
                                           text=translations_HM["categories"][lang],
                                           message_id=call.message.message_id)
             else:
+                if call.id is None:
+                    msg = bot.send_message(chat_id=call.message.chat.id, text=translations_HM["still_going"][lang])
+                    call = types.CallbackQuery(1, None, "Hangman", None, msg)
                 cls.hp_visual(call, bot, tmp_player,
                               translations_HM["still_going"][lang], lang)
         elif call.data in CATEGORIES:
@@ -80,43 +85,19 @@ class Hangman:
             else:
                 cls.hp_visual(call, bot, tmp_player,
                               translations_HM["still_going"][lang], lang)
-        # elif call.data == "language_ru":
-        #     if lang == 0:
-        #         keyboard = cls.create_keyboard(lang)
-        #         bot.edit_message_text(chat_id=call.message.chat.id, reply_markup=keyboard,
-        #                               text=translations_HM["categories"][lang],
-        #                               message_id=call.message.message_id)
-        #         tmp_player[HP] = 0
-        #     else:
-        #         lang = SWITCHER[lang]
-        #         keyboard = cls.create_keyboard(lang)
-        #
-        #         bot.edit_message_text(chat_id=call.message.chat.id, reply_markup=keyboard,
-        #                               text=translations_HM["categories"][lang],
-        #                               message_id=call.message.message_id)
-        #         tmp_player[HP] = -1
-        # elif call.data == "language_en":
-        #     if lang == 1:
-        #         keyboard = cls.create_keyboard(lang)
-        #         bot.edit_message_text(chat_id=call.message.chat.id, reply_markup=keyboard,
-        #                               text=translations_HM["categories"][lang],
-        #                               message_id=call.message.message_id)
-        #         tmp_player[HP] = 0
-        #     else:
-        #         lang = SWITCHER[lang]
-        #         keyboard = cls.create_keyboard(lang)
-        #
-        #         bot.edit_message_text(chat_id=call.message.chat.id, reply_markup=keyboard,
-        #                               text=translations_HM["categories"][lang],
-        #                               message_id=call.message.message_id)
-        #         tmp_player[HP] = -1
-        elif call.data in tmp_player[LETTERS]:
+        elif call.data in tmp_player[LETTERS] or call.data == '💡':
+            if call.data == '💡':
+                tmp_player[HINT] = ' '
+                for i in range(0, len(tmp_player[GUESS])):
+                    if tmp_player[GUESS][i] == '_':
+                        call.data = tmp_player[WORD][i]
+                        break
+                cls.hp_visual(call, bot, tmp_player, "", lang)
             # Находи нашего игрока в списке players
             # Убрать букву
             for i in range(0, len(tmp_player[LETTERS]) - 1):
                 if tmp_player[LETTERS][i] == call.data:
                     tmp_player[LETTERS][i] = ' '
-            print(tmp_player[WORD])
             # Если игрок угадал
             if str(call.data) in tmp_player[WORD]:
                 cls.guess_changer(str(call.data), tmp_player)
@@ -186,7 +167,8 @@ class Hangman:
             en = types.InlineKeyboardButton(text=translations_HM["en"][lang], callback_data="language_en")
             ru = types.InlineKeyboardButton(text=translations_HM["ru"][lang], callback_data="none")
 
-        keyboard.add(*categories_words, ru, en)
+        review = types.InlineKeyboardButton(text=translations_HM["write"][lang], callback_data='review')
+        keyboard.add(*categories_words, ru, en, review)
 
         return keyboard
 
@@ -200,7 +182,7 @@ class Hangman:
         :param player: Игрок
         :param lang: Язык
         """
-        # ID - 0, HP - 1, WORD - 2, GUESS - 3, LETTERS - 4, THEME - 5
+        # ID - 0, HP - 1, WORD - 2, GUESS - 3, LETTERS - 4, THEME - 5, HINT - 6
 
         player[THEME] = translations_HM[call.data][lang]
         if call.message.json["reply_markup"]["inline_keyboard"][6][0]["callback_data"] == "none":
@@ -214,6 +196,7 @@ class Hangman:
 
         player[HP] = 6
         player[GUESS] = []
+        player[HINT] = '💡'
 
         for i in range(0, len(player[WORD])):
             if player[WORD][i] == '-':
@@ -226,12 +209,6 @@ class Hangman:
                 player[GUESS].append("_")
 
         cls.hp_visual(call, bot, player, "", lang)
-        # if not MY_ID == call.from_user.id:
-        #     bot.send_message(MY_ID, "👁‍🗨 Тема: " + player[THEME])
-        #     bot.send_message(MY_ID, '👁‍🗨 Слово: ' + ''.join(player[WORD]))
-        #     print('Слово: ' + ''.join(player[WORD]))
-        #     bot.senMY_IDssage(MY_ID, '👁‍🗨 user_id: ' +
-        #                       str(call.from_user.id))
         cls.info('\n' + '👁‍🗨 Тема: ' + player[THEME] + '\n' + '👁‍🗨 Слово: ' + ''.join(player[WORD]) + '\n' +
                  '👁‍🗨 user_id: ' + str(call.from_user.id), bot, call, MY_ID)
 
@@ -248,7 +225,7 @@ class Hangman:
             for player in cls.players:
                 if player[ID] == message.chat.id:
                     return player
-            cls.players.append([message.chat.id, 0, [], [], [], ""])
+            cls.players.append([message.chat.id, 0, [], [], [], '', ''])
 
     # <3
     @classmethod
@@ -308,19 +285,24 @@ class Hangman:
         :return: Клавиатура
         """
         # Готовим клавиатуру
-        keyboard = types.InlineKeyboardMarkup(row_width=7)
+        keyboard = types.InlineKeyboardMarkup(row_width=8)
+
         # Список кнопок
         buttons_added = []
         # И добавляем в неё кнопки
         for letter in tmp_player[LETTERS]:
             if letter == ' ':
-                tmp = types.InlineKeyboardButton(text=letter, callback_data="none")
+                tmp = types.InlineKeyboardButton(text=' ', callback_data="none")
             else:
                 tmp = types.InlineKeyboardButton(text=letter, callback_data=letter)
             buttons_added.append(tmp)
+        if tmp_player[HINT] == ' ':
+            hint_btn = types.InlineKeyboardButton(text=' ', callback_data="none")
+        else:
+            hint_btn = types.InlineKeyboardButton(text=tmp_player[HINT], callback_data=tmp_player[HINT])
         exit_btn = types.InlineKeyboardButton(text="🚫️", callback_data="🚫️")
         re_call = types.InlineKeyboardButton(text="⬇️", callback_data="⬇️")
-        keyboard.add(*buttons_added, re_call, exit_btn)
+        keyboard.add(*buttons_added, hint_btn,  re_call, exit_btn)
         return keyboard
 
     @staticmethod
@@ -366,9 +348,9 @@ class Hangman:
         :param chat_id: ID чата
         :return:
         """
-        if not 1 == call.from_user.id:
-            bot.send_message(chat_id, '👤 ' + 'Игрок:  ' +
-                             str(call.from_user.first_name) + ' ' +
-                             str(call.from_user.last_name) + ' (' +
-                             str(call.from_user.username) + ')' +
-                             text)
+
+        bot.send_message(chat_id, '👤 ' + 'Игрок:  ' +
+                         str(call.from_user.first_name) + ' ' +
+                         str(call.from_user.last_name) + ' (' +
+                         str(call.from_user.username) + ')' +
+                         text)

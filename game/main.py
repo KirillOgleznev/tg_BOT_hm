@@ -1,5 +1,7 @@
 # - *- coding: utf- 8 - *-
 # Библеотека бота
+import traceback
+
 import telebot
 from telebot import types
 
@@ -45,9 +47,9 @@ def handle_text(message):
     main_menu_callback(types.CallbackQuery(None, message.from_user, "Hangman", None, message))
 
 
-@bot.message_handler(content_types=['text', 'photo'])
-def dating_handler(message):
-    print(message.text)
+# @bot.message_handler(content_types=['text', 'photo'])
+# def dating_handler(message):
+#     print(message.text)
 
 
 @bot.callback_query_handler(func=lambda call: True)
@@ -58,8 +60,23 @@ def main_menu_callback(call):
         Hangman.get_callback(call, bot, Translation.get_player_language(call.from_user.id))
     elif call.data in Hangman.call_list:
         Hangman.get_callback(call, bot, Translation.get_player_language(call.from_user.id))
+    elif call.data == 'review':
+        msg = bot.send_message(call.message.chat.id, Translation.get_hangman_exp("review", user_id=call.from_user.id))
+        bot.register_next_step_handler(msg, input_review)
+
+
+def input_review(message):
+    bot.send_message(723229931, '✅✅✅Отзыв: ' + message.text)
+    bot.send_message(message.chat.id, Translation.get_hangman_exp("success", user_id=message.from_user.id))
 
 
 if __name__ == "__main__":
-    bot.polling(none_stop=True)
-    logging.info('Finished')
+    while True:
+        try:
+            bot.polling(none_stop=True)
+            logging.info('Finished')
+        except:
+            try:
+                bot.send_message(723229931, '🚫🚫🚫Ошибка:  ' + str(traceback.format_exc()))
+            except:
+                traceback.print_exc()
