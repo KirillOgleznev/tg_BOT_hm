@@ -76,7 +76,4 @@ if __name__ == "__main__":
             bot.polling(none_stop=True)
             logging.info('Finished')
         except:
-            try:
-                bot.send_message(723229931, '🚫🚫🚫Ошибка:  ' + str(traceback.format_exc()))
-            except:
-                traceback.print_exc()
+            traceback.print_exc()
